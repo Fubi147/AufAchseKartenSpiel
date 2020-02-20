@@ -11,7 +11,8 @@
             "elm/html": "1.0.0",
             "elm/random": "1.0.0",
             "elm-community/array-extra": "2.1.0",
-            "elm-community/maybe-extra": "5.1.0"
+            "elm-community/maybe-extra": "5.1.0",
+            "pilatch/flip": "1.0.0"
         },
         "indirect": {
             "elm/json": "1.1.2",
