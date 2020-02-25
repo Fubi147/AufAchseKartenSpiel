@@ -1,11 +1,8 @@
 module StartView exposing (..)
 
-import Array exposing (Array)
-import GameLogic exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Maybe.Extra
 import Model exposing (..)
 
 

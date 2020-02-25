@@ -2,13 +2,13 @@ module Model exposing (..)
 
 import Array exposing (Array)
 import Array.Extra
+import Bool.Extra
 import Maybe.Extra
 import Random exposing (Seed)
 
 
 type alias Model =
-    { gameState : GameState
-    }
+    { gameState : GameState }
 
 
 type GameState
@@ -18,28 +18,24 @@ type GameState
 
 
 type alias StartInfo =
-    { players : List String
-    }
+    { players : List String }
 
 
 type alias GameInfo =
     { players : Array Player
     , stageNumber : Int
-    , playerInTurn : Int
-    , cardAction : CardAction
-    , cardToSharedDeck : Maybe Card
-    , cardToRoute : Maybe Card
-    , sharedDeck : Array Card
-    , sharedDeckSum : Int
+    , roundState : RoundState
+    , sharedPile : Array Card
+    , sharedPileSum : Int
     , randomnessSeed : Seed
     }
 
 
-type CardAction
-    = NoAction
-    | HandCardSelected Int
+type RoundState
+    = NextPlayerInTurn Int
+    | PlayerInTurn Int
     | RevealSharedCard
-    | ShowSharedCard Card
+    | RevealSharedCardPlayerInTurn Card Int
 
 
 type alias Player =
@@ -47,6 +43,9 @@ type alias Player =
     , points : Int
     , hand : Array Card
     , route : Array Card
+    , selectedHandCardIndex : Maybe Int
+    , cardsToRoute : Array Card
+    , cardToSharedPile : Maybe Card
     }
 
 
@@ -64,13 +63,14 @@ type Msg
     | AddPlayer
     | StartGame StartInfo
     | GameStarted StartInfo Seed
-    | HandCardClicked Int
-    | AddToSharedDeckClicked Int
-    | TakeSharedCardBackClicked
-    | AddToRouteClicked Int
-    | TakeRouteCardBackClicked
-    | EndTurn
-    | RevealSharedDeckCardClicked
+    | StartTurnClicked Int
+    | HandCardClicked Int Int
+    | AddToRouteClicked Int Int
+    | TakeRouteCardBackClicked Int Card
+    | AddToSharedPileClicked Int Int
+    | TakeSharedPileCardBackClicked Int Card
+    | EndTurnClicked Int
+    | RevealSharedPileCardClicked
 
 
 updateStartInfo : (StartInfo -> StartInfo) -> Model -> Model
@@ -91,6 +91,21 @@ updateGameInfo updateFunction model =
 
         _ ->
             model
+
+
+updateGameStageState : (RoundState -> RoundState) -> Model -> Model
+updateGameStageState updateFunction model =
+    case model.gameState of
+        Play gameInfo ->
+            { model | gameState = Play { gameInfo | roundState = updateFunction gameInfo.roundState } }
+
+        _ ->
+            model
+
+
+updatePlayer : Int -> (Player -> Player) -> Model -> Model
+updatePlayer playerIndex updateFunction model =
+    updateGameInfo (\gameInfo -> { gameInfo | players = Array.indexedMap (\index player -> Bool.Extra.ifElse (updateFunction player) player (index == playerIndex)) gameInfo.players }) model
 
 
 addCardToPlayersHand : Int -> Maybe Card -> Array Player -> Array Player

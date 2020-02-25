@@ -1,13 +1,16 @@
 module Main exposing (..)
 
 import Array exposing (Array)
+import Array.Extra
+import Bool.Extra
 import Browser
 import GameLogic exposing (..)
+import GameView exposing (..)
 import Html exposing (..)
+import Maybe.Extra
 import Model exposing (..)
 import Random exposing (Seed)
 import StartView exposing (viewStartInfo)
-import View exposing (..)
 
 
 
@@ -31,11 +34,11 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     --( Model <| Start <| StartInfo [ "Player 1" ], Cmd.none )
     --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2", "Player 3" ]) Random.independentSeed )
-    ( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
+    ( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1" ]) Random.independentSeed )
+    --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
 
 
 
---( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1" ]) Random.independentSeed )
 -- UPDATE
 
 
@@ -46,23 +49,7 @@ update msg model =
             ( updateStartInfo (\startInfo -> StartInfo (startInfo.players ++ [ "Player " ++ (String.fromInt <| 1 + List.length startInfo.players) ])) model, Cmd.none )
 
         NameChanged index newName ->
-            ( updateStartInfo
-                (\startInfo ->
-                    StartInfo
-                        (List.indexedMap
-                            (\index_ name ->
-                                if index_ == index then
-                                    newName
-
-                                else
-                                    name
-                            )
-                            startInfo.players
-                        )
-                )
-                model
-            , Cmd.none
-            )
+            ( updateStartInfo (\startInfo -> StartInfo (List.indexedMap (\index2 name -> Bool.Extra.ifElse newName name (index2 == index)) startInfo.players)) model, Cmd.none )
 
         RemovePlayer index ->
             ( updateStartInfo (\startInfo -> StartInfo (List.take index startInfo.players ++ List.drop (index + 1) startInfo.players)) model, Cmd.none )
@@ -73,84 +60,77 @@ update msg model =
         GameStarted startInfo seed ->
             ( Model <| Play <| initGame startInfo seed, Cmd.none )
 
-        HandCardClicked index ->
-            ( updateGameInfo (\gameInfo -> { gameInfo | cardAction = HandCardSelected index }) model, Cmd.none )
+        StartTurnClicked playerIndex ->
+            ( updateGameInfo (\gameInfo -> { gameInfo | roundState = PlayerInTurn playerIndex }) model, Cmd.none )
 
-        AddToRouteClicked selectedHandCardIndex ->
-            ( updateGameInfo
-                (\gameInfo ->
-                    { gameInfo
-                        | cardAction = NoAction
-                        , players = removeCardFromPlayersHand gameInfo.playerInTurn selectedHandCardIndex gameInfo.players
-                        , cardToRoute = getCardFromPlayersHand gameInfo.playerInTurn selectedHandCardIndex gameInfo.players
+        HandCardClicked playerIndex selectedHandCardIndex ->
+            ( updatePlayer playerIndex (\player -> { player | selectedHandCardIndex = Just selectedHandCardIndex }) model, Cmd.none )
+
+        AddToRouteClicked playerIndex selectedHandCardIndex ->
+            ( updatePlayer playerIndex
+                (\player ->
+                    { player
+                        | selectedHandCardIndex = Nothing
+                        , hand = Array.Extra.removeAt selectedHandCardIndex player.hand
+                        , cardsToRoute = Maybe.Extra.unwrap player.cardsToRoute (\card -> Array.push card player.cardsToRoute) (Array.get selectedHandCardIndex player.hand)
                     }
                 )
                 model
             , Cmd.none
             )
 
-        TakeRouteCardBackClicked ->
-            ( updateGameInfo
-                (\gameInfo ->
-                    { gameInfo
-                        | players = addCardToPlayersHand gameInfo.playerInTurn gameInfo.cardToRoute gameInfo.players
-                        , cardToRoute = Nothing
+        TakeRouteCardBackClicked playerIndex routeCard ->
+            ( updatePlayer playerIndex
+                (\player ->
+                    { player
+                        | hand = Array.push routeCard player.hand
+                        , cardsToRoute = Array.slice 0 -1 player.cardsToRoute
                     }
                 )
                 model
             , Cmd.none
             )
 
-        AddToSharedDeckClicked selectedHandCardIndex ->
-            ( updateGameInfo
-                (\gameInfo ->
-                    { gameInfo
-                        | cardAction = NoAction
-                        , players = removeCardFromPlayersHand gameInfo.playerInTurn selectedHandCardIndex gameInfo.players
-                        , cardToSharedDeck = getCardFromPlayersHand gameInfo.playerInTurn selectedHandCardIndex gameInfo.players
+        AddToSharedPileClicked playerIndex selectedHandCardIndex ->
+            ( updatePlayer playerIndex
+                (\player ->
+                    { player
+                        | selectedHandCardIndex = Nothing
+                        , hand = Array.Extra.removeAt selectedHandCardIndex player.hand
+                        , cardToSharedPile = Array.get selectedHandCardIndex player.hand
                     }
                 )
                 model
             , Cmd.none
             )
 
-        TakeSharedCardBackClicked ->
-            ( updateGameInfo
-                (\gameInfo ->
-                    { gameInfo
-                        | players = addCardToPlayersHand gameInfo.playerInTurn gameInfo.cardToSharedDeck gameInfo.players
-                        , cardToSharedDeck = Nothing
+        TakeSharedPileCardBackClicked playerIndex sharedPileCard ->
+            ( updatePlayer playerIndex
+                (\player ->
+                    { player
+                        | hand = Array.push sharedPileCard player.hand
+                        , cardToSharedPile = Nothing
                     }
                 )
                 model
             , Cmd.none
             )
 
-        EndTurn ->
-            ( updateGameInfo
-                (\gameInfo ->
-                    if gameInfo.playerInTurn >= Array.length gameInfo.players - 1 then
-                        endRound <| endTurn gameInfo
+        EndTurnClicked playerIndex ->
+            ( updateGameInfo (\gameInfo -> Bool.Extra.ifElse (endRound <| endTurn gameInfo) (endTurn gameInfo) (playerIndex >= Array.length gameInfo.players - 1)) model, Cmd.none )
 
-                    else
-                        endTurn gameInfo
-                )
-                model
-            , Cmd.none
-            )
-
-        RevealSharedDeckCardClicked ->
+        RevealSharedPileCardClicked ->
             ( updateGameInfo
                 (\gameInfo ->
                     let
                         sharedDeckCard =
-                            Array.get (Array.length gameInfo.sharedDeck - 1) gameInfo.sharedDeck
+                            Array.get (Array.length gameInfo.sharedPile - 1) gameInfo.sharedPile
                     in
                     case sharedDeckCard of
                         Just card ->
                             { gameInfo
-                                | cardAction = ShowSharedCard card
-                                , sharedDeck = Array.slice 0 -1 gameInfo.sharedDeck
+                                | roundState = RevealSharedCardPlayerInTurn card 0
+                                , sharedPile = Array.slice 0 -1 gameInfo.sharedPile
                             }
 
                         Nothing ->

@@ -1,8 +1,6 @@
 module GameLogic exposing (..)
 
 import Array
-import Flip exposing (flip)
-import Maybe.Extra
 import Model exposing (..)
 import Random exposing (Seed)
 
@@ -10,30 +8,36 @@ import Random exposing (Seed)
 nextRound : GameInfo -> GameInfo
 nextRound gameInfo =
     { gameInfo
-        | playerInTurn = gameInfo.playerInTurn + 1
-        , cardAction = NoAction
-        , cardToRoute = Nothing
-        , players = addCardToPlayersRoute gameInfo.playerInTurn gameInfo.cardToRoute gameInfo.players
-        , cardToSharedDeck = Nothing
-        , sharedDeck = Maybe.Extra.unwrap gameInfo.sharedDeck (flip Array.push gameInfo.sharedDeck) gameInfo.cardToSharedDeck
+        | roundState = NextPlayerInTurn 0
     }
 
 
 endTurn : GameInfo -> GameInfo
 endTurn gameInfo =
+    let
+        playerInTurn =
+            case gameInfo.roundState of
+                NextPlayerInTurn int ->
+                    int
+
+                PlayerInTurn int ->
+                    int
+
+                RevealSharedCard ->
+                    0
+
+                RevealSharedCardPlayerInTurn card int ->
+                    --todo
+                    0
+    in
     { gameInfo
-        | playerInTurn = gameInfo.playerInTurn + 1
-        , cardAction = NoAction
-        , cardToRoute = Nothing
-        , players = addCardToPlayersRoute gameInfo.playerInTurn gameInfo.cardToRoute gameInfo.players
-        , cardToSharedDeck = Nothing
-        , sharedDeck = Maybe.Extra.unwrap gameInfo.sharedDeck (flip Array.push gameInfo.sharedDeck) gameInfo.cardToSharedDeck
+        | roundState = NextPlayerInTurn (playerInTurn + 1)
     }
 
 
 endRound : GameInfo -> GameInfo
 endRound gameInfo =
-    { gameInfo | cardAction = RevealSharedCard }
+    { gameInfo | roundState = RevealSharedCard }
 
 
 getCardValue : Card -> Int
@@ -47,6 +51,16 @@ getCardValue card =
 
         _ ->
             0
+
+
+isDiscard : Card -> Bool
+isDiscard card =
+    case card of
+        Abwerfkarte ->
+            True
+
+        _ ->
+            False
 
 
 cardGenerator : Random.Generator Card
@@ -88,6 +102,6 @@ initGame startInfo seed =
             Array.fromList <| List.take numCards <| List.drop (numCards * index) deck
 
         players =
-            Array.fromList <| List.indexedMap (\index name -> Player name 0 (takeCards index drawDeck) Array.empty) startInfo.players
+            Array.fromList <| List.indexedMap (\index name -> Player name 0 (takeCards index drawDeck) Array.empty Nothing Array.empty Nothing) startInfo.players
     in
-    GameInfo players 0 0 NoAction Nothing Nothing Array.empty 0 newSeed
+    GameInfo players 0 (NextPlayerInTurn 0) Array.empty 0 newSeed
