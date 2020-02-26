@@ -35,10 +35,10 @@ init _ =
     --( Model <| Start <| StartInfo [ "Player 1" ], Cmd.none )
     --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2", "Player 3" ]) Random.independentSeed )
     ( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1" ]) Random.independentSeed )
-    --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
 
 
 
+--( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
 -- UPDATE
 
 
@@ -123,14 +123,14 @@ update msg model =
             ( updateGameInfo
                 (\gameInfo ->
                     let
-                        sharedDeckCard =
+                        sharedPileCard =
                             Array.get (Array.length gameInfo.sharedPile - 1) gameInfo.sharedPile
                     in
-                    case sharedDeckCard of
+                    case sharedPileCard of
                         Just card ->
                             { gameInfo
                                 | roundState = RevealSharedCardPlayerInTurn card 0
-                                , sharedPile = Array.slice 0 -1 gameInfo.sharedPile
+                                , sharedPile = Array.Extra.pop gameInfo.sharedPile
                             }
 
                         Nothing ->
