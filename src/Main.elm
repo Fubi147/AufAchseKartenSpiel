@@ -117,14 +117,20 @@ update msg model =
             )
 
         EndTurnClicked playerIndex ->
-            ( updateGameInfo (\gameInfo -> Bool.Extra.ifElse (endRound <| endTurn gameInfo) (endTurn gameInfo) (playerIndex >= Array.length gameInfo.players - 1)) model, Cmd.none )
+            ( updateGameInfo
+                (\gameInfo ->
+                    Bool.Extra.ifElse (endRound <| endTurn playerIndex gameInfo) (endTurn playerIndex gameInfo) (playerIndex >= Array.length gameInfo.players - 1)
+                )
+                model
+            , Cmd.none
+            )
 
         RevealSharedPileCardClicked ->
             ( updateGameInfo
                 (\gameInfo ->
                     let
                         sharedPileCard =
-                            Array.get (Array.length gameInfo.sharedPile - 1) gameInfo.sharedPile
+                            Array.get (Debug.log "element: " (Array.length gameInfo.sharedPile - 1)) gameInfo.sharedPile
                     in
                     case sharedPileCard of
                         Just card ->

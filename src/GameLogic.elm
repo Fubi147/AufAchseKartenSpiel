@@ -12,26 +12,15 @@ nextRound gameInfo =
     }
 
 
-endTurn : GameInfo -> GameInfo
-endTurn gameInfo =
+endTurn : Int -> GameInfo -> GameInfo
+endTurn playerIndex gameInfo =
     let
-        playerInTurn =
-            case gameInfo.roundState of
-                NextPlayerInTurn int ->
-                    int
+        player =
+            Array.get playerIndex gameInfo.players
 
-                PlayerInTurn int ->
-                    int
-
-                RevealSharedCard ->
-                    0
-
-                RevealSharedCardPlayerInTurn card int ->
-                    --todo
-                    0
     in
     { gameInfo
-        | roundState = NextPlayerInTurn (playerInTurn + 1)
+        | roundState = NextPlayerInTurn (playerIndex + 1)
     }
 
 

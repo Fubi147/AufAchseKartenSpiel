@@ -7,6 +7,31 @@ import Html.Attributes exposing (disabled, style)
 import Html.Events exposing (..)
 import Maybe.Extra
 import Model exposing (..)
+import Svg exposing (svg, use)
+import Svg.Attributes exposing (xlinkHref)
+
+
+viewCard : Card -> Html Msg
+viewCard card =
+    case card of
+        _ ->
+            svg [] [ use [ xlinkHref "#darktable" ] [] ]
+
+
+
+--Speed int ->
+--
+--
+--Minus50 ->
+--
+--
+--Tankstelle ->
+--
+--
+--Nachziehkarte int ->
+--
+--
+--Abwerfkarte ->
 
 
 viewCards mf cards =
@@ -22,8 +47,9 @@ showCardFront playerIndex player =
         button ([ onClick (HandCardClicked playerIndex cardIndex) ] ++ colorAttributes) [ text <| Debug.toString card ]
 
 
+showCardBack : List (Attribute Msg) -> (Int -> Card -> Html Msg)
 showCardBack attributes =
-    \_ _ -> button attributes [ text "X" ]
+    \_ _ -> svg [] [ use [ xlinkHref "#darktable" ] [] ]
 
 
 viewPlayer : GameInfo -> Int -> Player -> Html Msg
