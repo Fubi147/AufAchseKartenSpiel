@@ -10,7 +10,7 @@ import Html exposing (..)
 import Maybe.Extra
 import Model exposing (..)
 import Random exposing (Seed)
-import StartView exposing (viewStartInfo)
+import StartView exposing (..)
 
 
 
@@ -34,11 +34,11 @@ init : () -> ( Model, Cmd Msg )
 init _ =
     --( Model <| Start <| StartInfo [ "Player 1" ], Cmd.none )
     --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2", "Player 3" ]) Random.independentSeed )
-    ( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1" ]) Random.independentSeed )
+    --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1" ]) Random.independentSeed )
+    ( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
 
 
 
---( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
 -- UPDATE
 
 
@@ -61,7 +61,18 @@ update msg model =
             ( Model <| Play <| initGame startInfo seed, Cmd.none )
 
         StartTurnClicked playerIndex ->
-            ( updateGameInfo (\gameInfo -> { gameInfo | roundState = PlayerInTurn playerIndex }) model, Cmd.none )
+            ( updateGameInfo
+                (\gameInfo ->
+                    case gameInfo.roundState of
+                        RevealSharedCardPlayerInTurn sharedCard playerIndex2 turnStarted ->
+                            { gameInfo | roundState = RevealSharedCardPlayerInTurn sharedCard playerIndex2 True }
+
+                        _ ->
+                            { gameInfo | roundState = PlayerInTurn playerIndex }
+                )
+                model
+            , Cmd.none
+            )
 
         HandCardClicked playerIndex selectedHandCardIndex ->
             ( updatePlayer playerIndex (\player -> { player | selectedHandCardIndex = Just selectedHandCardIndex }) model, Cmd.none )
@@ -119,7 +130,28 @@ update msg model =
         EndTurnClicked playerIndex ->
             ( updateGameInfo
                 (\gameInfo ->
-                    Bool.Extra.ifElse (endRound <| endTurn playerIndex gameInfo) (endTurn playerIndex gameInfo) (playerIndex >= Array.length gameInfo.players - 1)
+                    case gameInfo.roundState of
+                        RevealSharedCardPlayerInTurn sharedCard playerIndex2 turnStarted ->
+                            { gameInfo
+                                | roundState = RevealSharedCardPlayerInTurn sharedCard (playerIndex2 + 1) False
+                                , players =
+                                    updatePlayerInPlayera playerIndex
+                                        (\player2 ->
+                                            { player2
+                                                | route = Array.append player2.route player2.cardsToRoute
+                                                , selectedHandCardIndex = Nothing
+                                                , cardsToRoute = Array.empty
+                                            }
+                                        )
+                                        gameInfo.players
+                            }
+
+                        _ ->
+                            if isLastPlayerInRound gameInfo then
+                                startRoundEnd <| endTurn playerIndex gameInfo
+
+                            else
+                                endTurn playerIndex gameInfo
                 )
                 model
             , Cmd.none
@@ -130,21 +162,39 @@ update msg model =
                 (\gameInfo ->
                     let
                         sharedPileCard =
-                            Array.get (Debug.log "element: " (Array.length gameInfo.sharedPile - 1)) gameInfo.sharedPile
+                            Array.get (Array.length gameInfo.sharedPile - 1) gameInfo.sharedPile
                     in
                     case sharedPileCard of
                         Just card ->
                             { gameInfo
-                                | roundState = RevealSharedCardPlayerInTurn card 0
+                                | roundState = RevealSharedCardPlayerInTurn card (modBy (Array.length gameInfo.players) gameInfo.roundNumber) False
                                 , sharedPile = Array.Extra.pop gameInfo.sharedPile
+                                , sharedPileSum = gameInfo.sharedPileSum + getCardValue card
+                                , players =
+                                    case card of
+                                        Abwerfkarte ->
+                                            Array.map
+                                                (\player ->
+                                                    { player
+                                                        | cardsToRoute = Array.slice -1 (Array.length player.route) player.route
+                                                        , route = Array.slice 0 -1 player.route
+                                                    }
+                                                )
+                                                gameInfo.players
+
+                                        _ ->
+                                            Array.map (\player -> { player | cardsToRoute = Array.empty }) gameInfo.players
                             }
 
                         Nothing ->
-                            nextRound gameInfo
+                            endRound { gameInfo | players = Array.map (\player -> { player | cardsToRoute = Array.empty }) gameInfo.players }
                 )
                 model
             , Cmd.none
             )
+
+        NextStageClicked ->
+            ( model, Cmd.none )
 
 
 

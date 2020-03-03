@@ -1,8 +1,25 @@
 module GameLogic exposing (..)
 
 import Array
+import Maybe.Extra
 import Model exposing (..)
 import Random exposing (Seed)
+
+
+isLastPlayerInRound : GameInfo -> Bool
+isLastPlayerInRound gameInfo =
+    case gameInfo.roundState of
+        NextPlayerInTurn playerIndex ->
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+
+        PlayerInTurn playerIndex ->
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+
+        RevealSharedCardPlayerInTurn _ playerIndex _ ->
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+
+        _ ->
+            False
 
 
 nextRound : GameInfo -> GameInfo
@@ -10,6 +27,7 @@ nextRound gameInfo =
     { gameInfo
         | roundState = NextPlayerInTurn 0
     }
+        |> fillPlayersHand
 
 
 endTurn : Int -> GameInfo -> GameInfo
@@ -17,16 +35,47 @@ endTurn playerIndex gameInfo =
     let
         player =
             Array.get playerIndex gameInfo.players
-
     in
     { gameInfo
-        | roundState = NextPlayerInTurn (playerIndex + 1)
+        | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (playerIndex + 1))
+        , players =
+            updatePlayerInPlayera playerIndex
+                (\player2 ->
+                    { player2
+                        | route = Array.append player2.route player2.cardsToRoute
+                        , selectedHandCardIndex = Nothing
+                        , cardsToRoute = Array.empty
+                        , cardToSharedPile = Nothing
+                    }
+                )
+                gameInfo.players
+        , sharedPile =
+            Array.append gameInfo.sharedPile
+                (Maybe.Extra.unwrap Array.empty
+                    (\player2 -> Maybe.Extra.unwrap Array.empty (\card -> Array.fromList [ card ]) player2.cardToSharedPile)
+                    player
+                )
     }
+
+
+startRoundEnd : GameInfo -> GameInfo
+startRoundEnd gameInfo =
+    { gameInfo | roundState = RevealSharedCard }
 
 
 endRound : GameInfo -> GameInfo
 endRound gameInfo =
-    { gameInfo | roundState = RevealSharedCard }
+    let
+        isStageEnd =
+            gameInfo.sharedPileSum >= 50 * (1 + Array.length gameInfo.players)
+    in
+    if isStageEnd then
+        { gameInfo | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.roundNumber + 1)), roundNumber = gameInfo.roundNumber + 1 }
+            |> fillPlayersHand
+
+    else
+        { gameInfo | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.roundNumber + 1)), roundNumber = gameInfo.roundNumber + 1 }
+            |> fillPlayersHand
 
 
 getCardValue : Card -> Int
@@ -57,9 +106,9 @@ cardGenerator =
     Random.weighted
         ( 12, Tankstelle )
         [ ( 5, Minus50 )
-        , ( 5, Nachziehkarte 1 )
-        , ( 5, Nachziehkarte 2 )
-        , ( 5, Abwerfkarte )
+        , ( 50, Nachziehkarte 1 )
+        , ( 50, Nachziehkarte 2 )
+        , ( 50, Abwerfkarte )
         , ( 4, Speed 10 )
         , ( 4, Speed 20 )
         , ( 5, Speed 30 )
@@ -91,6 +140,28 @@ initGame startInfo seed =
             Array.fromList <| List.take numCards <| List.drop (numCards * index) deck
 
         players =
-            Array.fromList <| List.indexedMap (\index name -> Player name 0 (takeCards index drawDeck) Array.empty Nothing Array.empty Nothing) startInfo.players
+            Array.fromList <| List.map (\name -> Player name 0 Array.empty Array.empty Nothing Array.empty Nothing) startInfo.players
     in
-    GameInfo players 0 (NextPlayerInTurn 0) Array.empty 0 newSeed
+    GameInfo players 0 0 (NextPlayerInTurn 0) Array.empty Nothing 0 newSeed
+        |> fillPlayersHand
+
+
+fillPlayersHand : GameInfo -> GameInfo
+fillPlayersHand gameInfo =
+    let
+        numCards =
+            10 - Maybe.Extra.unwrap 0 (\player -> Array.length player.hand) (Array.get 0 gameInfo.players)
+
+        createDrawDeck =
+            Random.list (numCards * Array.length gameInfo.players) cardGenerator
+
+        ( drawDeck, newSeed ) =
+            Random.step createDrawDeck gameInfo.randomnessSeed
+
+        takeCards index deck =
+            Array.fromList <| List.take numCards <| List.drop (numCards * index) deck
+
+        newPlayers =
+            Array.indexedMap (\index player -> { player | hand = Array.append player.hand (takeCards index drawDeck) }) gameInfo.players
+    in
+    { gameInfo | players = newPlayers, randomnessSeed = newSeed }

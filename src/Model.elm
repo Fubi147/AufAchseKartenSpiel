@@ -24,8 +24,10 @@ type alias StartInfo =
 type alias GameInfo =
     { players : Array Player
     , stageNumber : Int
+    , roundNumber : Int
     , roundState : RoundState
     , sharedPile : Array Card
+    , sharedPileCard : Maybe Card
     , sharedPileSum : Int
     , randomnessSeed : Seed
     }
@@ -35,7 +37,8 @@ type RoundState
     = NextPlayerInTurn Int
     | PlayerInTurn Int
     | RevealSharedCard
-    | RevealSharedCardPlayerInTurn Card Int
+    | RevealSharedCardPlayerInTurn Card Int Bool
+    | StageEnd
 
 
 type alias Player =
@@ -71,6 +74,7 @@ type Msg
     | TakeSharedPileCardBackClicked Int Card
     | EndTurnClicked Int
     | RevealSharedPileCardClicked
+    | NextStageClicked
 
 
 updateStartInfo : (StartInfo -> StartInfo) -> Model -> Model
@@ -106,6 +110,11 @@ updateGameStageState updateFunction model =
 updatePlayer : Int -> (Player -> Player) -> Model -> Model
 updatePlayer playerIndex updateFunction model =
     updateGameInfo (\gameInfo -> { gameInfo | players = Array.indexedMap (\index player -> Bool.Extra.ifElse (updateFunction player) player (index == playerIndex)) gameInfo.players }) model
+
+
+updatePlayerInPlayera : Int -> (Player -> Player) -> Array Player -> Array Player
+updatePlayerInPlayera playerIndex updateFunction players =
+    Array.indexedMap (\index player -> Bool.Extra.ifElse (updateFunction player) player (index == playerIndex)) players
 
 
 addCardToPlayersHand : Int -> Maybe Card -> Array Player -> Array Player

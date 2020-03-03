@@ -16,7 +16,7 @@
    version="1.1"
    id="card"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
-   sodipodi:docname="AAKS-Karte-opt2.svg">
+   sodipodi:docname="card.svg">
   <defs
      id="defs2">
     <linearGradient
@@ -1473,9 +1473,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8284271"
-     inkscape:cx="83.606303"
-     inkscape:cy="230.74825"
+     inkscape:zoom="2.6458333"
+     inkscape:cx="98.267717"
+     inkscape:cy="154.96063"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -1496,7 +1496,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -3378,7 +3378,8 @@
     <g
        style="stroke-width:1.22526598"
        id="flat"
-       transform="matrix(-0.03982072,0,0,0.03920388,47.147987,235.81564)">
+       transform="matrix(-0.03982072,0,0,0.03920388,47.147987,235.81564)"
+       class="factory">
       <path
          id="path3921"
          d="M 344,488 H 296 V 392 H 56 v -96 h 288 z"
@@ -3709,10 +3710,11 @@
       <ellipse
          ry="5.929924"
          rx="6.0232258"
-         style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#00ff00;stroke-width:1.4000001;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         style="opacity:1;fill:#ffffff;fill-opacity:1;stroke-width:1.4000001;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
          id="circle3909"
          cx="64.725624"
-         cy="106.12376" />
+         cy="106.12376"
+         class="card-color" />
       <text
          transform="scale(1.0078363,0.99222463)"
          id="text9065"
