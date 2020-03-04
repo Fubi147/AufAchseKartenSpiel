@@ -1,6 +1,6 @@
 module GameLogic exposing (..)
 
-import Array
+import Array exposing (Array)
 import Maybe.Extra
 import Model exposing (..)
 import Random exposing (Seed)
@@ -15,52 +15,87 @@ isLastPlayerInRound gameInfo =
         PlayerInTurn playerIndex ->
             playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
 
-        RevealSharedCardPlayerInTurn _ playerIndex _ ->
+        RevealSharedPileCardNextPlayerInTurn playerIndex ->
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+
+        RevealSharedPileCardPlayerInTurn playerIndex ->
             playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
 
         _ ->
             False
 
 
-nextRound : GameInfo -> GameInfo
-nextRound gameInfo =
-    { gameInfo
-        | roundState = NextPlayerInTurn 0
-    }
-        |> fillPlayersHand
-
-
 endTurn : Int -> GameInfo -> GameInfo
 endTurn playerIndex gameInfo =
-    let
-        player =
-            Array.get playerIndex gameInfo.players
-    in
     { gameInfo
         | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (playerIndex + 1))
         , players =
-            updatePlayerInPlayera playerIndex
+            updatePlayerInPlayers playerIndex
                 (\player2 ->
                     { player2
                         | route = Array.append player2.route player2.cardsToRoute
                         , selectedHandCardIndex = Nothing
                         , cardsToRoute = Array.empty
-                        , cardToSharedPile = Nothing
                     }
                 )
                 gameInfo.players
         , sharedPile =
-            Array.append gameInfo.sharedPile
-                (Maybe.Extra.unwrap Array.empty
-                    (\player2 -> Maybe.Extra.unwrap Array.empty (\card -> Array.fromList [ card ]) player2.cardToSharedPile)
-                    player
-                )
+            Array.append gameInfo.sharedPile (Maybe.Extra.toArray gameInfo.sharedPileCard)
+        , sharedPileCard = Nothing
     }
 
 
 startRoundEnd : GameInfo -> GameInfo
 startRoundEnd gameInfo =
-    { gameInfo | roundState = RevealSharedCard }
+    { gameInfo | roundState = RevealSharedPileCard }
+
+
+nextStage : GameInfo -> GameInfo
+nextStage gameInfo =
+    { gameInfo
+        | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.stageNumber + 1))
+        , roundNumber = 0
+        , players = Array.map (\player -> { player | hand = Array.empty }) gameInfo.players
+    }
+        |> fillPlayersHand
+
+
+calculateScore : Player -> Player
+calculateScore player =
+    let
+        calculateScoreFromRoute : List Card -> Int
+        calculateScoreFromRoute route =
+            case route of
+                [] ->
+                    0
+
+                [ Speed speed ] ->
+                    speed
+
+                (Speed speed1) :: (Speed speed2) :: rest ->
+                    if speed2 < speed1 then
+                        speed1 + calculateScoreFromRoute (Speed speed2 :: rest)
+
+                    else
+                        speed1
+
+                ServiceStation :: (Speed speed) :: rest ->
+                    calculateScoreFromRoute (Speed speed :: rest)
+
+                (Speed speed1) :: ServiceStation :: (Speed speed2) :: rest ->
+                    if speed2 < speed1 then
+                        speed1 + calculateScoreFromRoute (Speed speed2 :: rest)
+
+                    else
+                        speed1
+
+                (Speed speed) :: ServiceStation :: ServiceStation :: _ ->
+                    speed
+
+                _ ->
+                    0
+    in
+    { player | score = player.score + calculateScoreFromRoute (player.route |> Array.toList |> List.reverse) }
 
 
 endRound : GameInfo -> GameInfo
@@ -70,11 +105,13 @@ endRound gameInfo =
             gameInfo.sharedPileSum >= 50 * (1 + Array.length gameInfo.players)
     in
     if isStageEnd then
-        { gameInfo | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.roundNumber + 1)), roundNumber = gameInfo.roundNumber + 1 }
-            |> fillPlayersHand
+        { gameInfo | roundState = StageEnd, players = Array.map calculateScore gameInfo.players }
 
     else
-        { gameInfo | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.roundNumber + 1)), roundNumber = gameInfo.roundNumber + 1 }
+        { gameInfo
+            | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.roundNumber + 1))
+            , roundNumber = gameInfo.roundNumber + 1
+        }
             |> fillPlayersHand
 
 
@@ -91,24 +128,14 @@ getCardValue card =
             0
 
 
-isDiscard : Card -> Bool
-isDiscard card =
-    case card of
-        Abwerfkarte ->
-            True
-
-        _ ->
-            False
-
-
 cardGenerator : Random.Generator Card
 cardGenerator =
     Random.weighted
-        ( 12, Tankstelle )
+        ( 12, ServiceStation )
         [ ( 5, Minus50 )
-        , ( 50, Nachziehkarte 1 )
-        , ( 50, Nachziehkarte 2 )
-        , ( 50, Abwerfkarte )
+        , ( 5, DrawCard 1 )
+        , ( 5, DrawCard 2 )
+        , ( 5, Discard )
         , ( 4, Speed 10 )
         , ( 4, Speed 20 )
         , ( 5, Speed 30 )
@@ -140,7 +167,7 @@ initGame startInfo seed =
             Array.fromList <| List.take numCards <| List.drop (numCards * index) deck
 
         players =
-            Array.fromList <| List.map (\name -> Player name 0 Array.empty Array.empty Nothing Array.empty Nothing) startInfo.players
+            Array.fromList <| List.map (\name -> Player name 0 Array.empty Array.empty Nothing Array.empty) startInfo.players
     in
     GameInfo players 0 0 (NextPlayerInTurn 0) Array.empty Nothing 0 newSeed
         |> fillPlayersHand

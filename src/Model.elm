@@ -36,28 +36,28 @@ type alias GameInfo =
 type RoundState
     = NextPlayerInTurn Int
     | PlayerInTurn Int
-    | RevealSharedCard
-    | RevealSharedCardPlayerInTurn Card Int Bool
+    | RevealSharedPileCard
+    | RevealSharedPileCardNextPlayerInTurn Int
+    | RevealSharedPileCardPlayerInTurn Int
     | StageEnd
 
 
 type alias Player =
     { name : String
-    , points : Int
+    , score : Int
     , hand : Array Card
     , route : Array Card
     , selectedHandCardIndex : Maybe Int
     , cardsToRoute : Array Card
-    , cardToSharedPile : Maybe Card
     }
 
 
 type Card
     = Speed Int
     | Minus50
-    | Tankstelle
-    | Nachziehkarte Int
-    | Abwerfkarte
+    | ServiceStation
+    | DrawCard Int
+    | Discard
 
 
 type Msg
@@ -66,13 +66,13 @@ type Msg
     | AddPlayer
     | StartGame StartInfo
     | GameStarted StartInfo Seed
-    | StartTurnClicked Int
+    | StartTurnClicked
     | HandCardClicked Int Int
     | AddToRouteClicked Int Int
     | TakeRouteCardBackClicked Int Card
-    | AddToSharedPileClicked Int Int
+    | AddToSharedPileClicked Int
     | TakeSharedPileCardBackClicked Int Card
-    | EndTurnClicked Int
+    | EndTurnClicked
     | RevealSharedPileCardClicked
     | NextStageClicked
 
@@ -112,8 +112,8 @@ updatePlayer playerIndex updateFunction model =
     updateGameInfo (\gameInfo -> { gameInfo | players = Array.indexedMap (\index player -> Bool.Extra.ifElse (updateFunction player) player (index == playerIndex)) gameInfo.players }) model
 
 
-updatePlayerInPlayera : Int -> (Player -> Player) -> Array Player -> Array Player
-updatePlayerInPlayera playerIndex updateFunction players =
+updatePlayerInPlayers : Int -> (Player -> Player) -> Array Player -> Array Player
+updatePlayerInPlayers playerIndex updateFunction players =
     Array.indexedMap (\index player -> Bool.Extra.ifElse (updateFunction player) player (index == playerIndex)) players
 
 
@@ -151,6 +151,15 @@ addCardToPlayersRoute playerIndex card players =
 
         Nothing ->
             players
+
+
+getSelectedCardFromPlayersHand : Int -> Array Player -> Maybe Card
+getSelectedCardFromPlayersHand playerIndex players =
+    let
+        currentPlayer =
+            Array.get playerIndex players
+    in
+    Maybe.Extra.join <| Maybe.map (\player -> Maybe.Extra.unwrap Nothing (\selectedHandCardIndex -> Array.get selectedHandCardIndex player.hand) player.selectedHandCardIndex) currentPlayer
 
 
 getCardFromPlayersHand : Int -> Int -> Array Player -> Maybe Card
