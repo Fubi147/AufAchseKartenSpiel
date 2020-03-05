@@ -83,20 +83,22 @@ viewPlayer gameInfo playerIndex player =
 
         routeCards =
             div []
-                (Array.toList (Array.map (\card -> viewCard card False routeCardsHidden []) player.route)
-                    ++ Array.toList (Array.map (\card -> viewCard card False False []) player.cardsToRoute)
-                    ++ [ if Array.length player.cardsToRoute < maxNumberCardsToRoute then
-                            Maybe.Extra.unwrap (text "") (\index -> button [ onClick <| AddToRouteClicked playerIndex index ] [ text "Add To Route" ]) player.selectedHandCardIndex
+                ([ text "Route: " ]
+                    ++ (Array.toList (Array.map (\card -> viewCard card False routeCardsHidden []) player.route)
+                            ++ Array.toList (Array.map (\card -> viewCard card False False []) player.cardsToRoute)
+                            ++ [ if Array.length player.cardsToRoute < maxNumberCardsToRoute then
+                                    Maybe.Extra.unwrap (text "") (\index -> button [ onClick <| AddToRouteClicked playerIndex index ] [ text "Add To Route" ]) player.selectedHandCardIndex
 
-                         else
-                            text ""
-                       ]
-                    ++ [ if isPlayerInTurn then
-                            Maybe.Extra.unwrap (text "") (\card -> button [ onClick <| TakeRouteCardBackClicked playerIndex card ] [ text "Take Card Back" ]) lastToRouteCard
+                                 else
+                                    text ""
+                               ]
+                            ++ [ if isPlayerInTurn then
+                                    Maybe.Extra.unwrap (text "") (\card -> button [ onClick <| TakeRouteCardBackClicked playerIndex card ] [ text "Take Card Back" ]) lastToRouteCard
 
-                         else
-                            text ""
-                       ]
+                                 else
+                                    text ""
+                               ]
+                       )
                 )
     in
     div []
@@ -190,7 +192,7 @@ viewRoundStateButton gameInfo =
                 Just (DrawCard numberCardsToDraw) ->
                     let
                         isButtonDisabled =
-                            Maybe.Extra.unwrap True (\player -> Debug.log "Array.length player.cardsToRoute: " (Array.length player.cardsToRoute) /= Debug.log "numberCardsToDraw: " numberCardsToDraw) (Array.get playerIndex gameInfo.players)
+                            Maybe.Extra.unwrap True (\player -> Array.length player.cardsToRoute /= numberCardsToDraw) (Array.get playerIndex gameInfo.players)
                     in
                     button [ disabled isButtonDisabled, onClick <| EndTurnClicked ] [ text "End Turn" ]
 

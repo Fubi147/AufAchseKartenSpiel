@@ -35,7 +35,8 @@ init _ =
     --( Model <| Start <| StartInfo [ "Player 1" ], Cmd.none )
     --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2", "Player 3" ]) Random.independentSeed )
     --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1" ]) Random.independentSeed )
-    ( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
+    --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
+    ( Model <| Start <| StartInfo [ "Player 1", "Player 2" ], Cmd.none )
 
 
 
@@ -149,7 +150,7 @@ update msg model =
                                         RevealSharedPileCard
 
                                     else
-                                        RevealSharedPileCardNextPlayerInTurn (playerIndex + 1)
+                                        RevealSharedPileCardNextPlayerInTurn (modBy (Array.length gameInfo.players) (playerIndex + 1))
                                 , players =
                                     updatePlayerInPlayers playerIndex
                                         (\player2 ->

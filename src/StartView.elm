@@ -19,6 +19,7 @@ viewStartInfo startInfo =
     in
     div []
         [ div [] <| List.indexedMap mapPlayersToInput startInfo.players
-        , button [ onClick AddPlayer ] [ text "Add Player" ]
+        , button [ onClick AddPlayer ] [ text "+ Add Player" ]
+        , div [] [ br [] [] ]
         , button [ onClick <| StartGame startInfo ] [ text "Start Game" ]
         ]
