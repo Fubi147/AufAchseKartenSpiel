@@ -1,6 +1,7 @@
 module GameView exposing (..)
 
 import Array exposing (Array)
+import GameLogic exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (disabled, style)
 import Html.Events exposing (..)
@@ -170,7 +171,13 @@ viewRoundStateButton gameInfo =
                     Array.get (Array.length gameInfo.sharedPile - 1) gameInfo.sharedPile
             in
             if nextSharedPileCard == Nothing then
-                button [ onClick <| RevealSharedPileCardClicked ] [ text "Next Round" ]
+                button [ onClick <| RevealSharedPileCardClicked ]
+                    [ if isStageEnd gameInfo then
+                        text "End Stage"
+
+                      else
+                        text "Next Round"
+                    ]
 
             else
                 button [ onClick <| RevealSharedPileCardClicked ] [ text "Reveal Shared Pile Card" ]
@@ -196,18 +203,26 @@ viewRoundStateButton gameInfo =
 
 viewGameStats : GameInfo -> Html Msg
 viewGameStats gameInfo =
-    gameInfo.players
-        |> Array.map (\player -> div [] [ player.name ++ ": " ++ String.fromInt player.score |> text ])
-        |> Array.toList
-        |> div []
+    div []
+        [ text "Score: "
+        , gameInfo.players
+            |> Array.map (\player -> div [] [ player.name ++ ": " ++ String.fromInt player.score |> text ])
+            |> Array.toList
+            |> div []
+        ]
 
 
 viewGame : GameInfo -> Html Msg
 viewGame gameInfo =
     div []
-        [ div [] <| Array.toList <| Array.indexedMap (viewPlayer gameInfo) gameInfo.players
+        [ Array.indexedMap (viewPlayer gameInfo) gameInfo.players
+            |> Array.toList
+            |> List.intersperse (div [] [ br [] [] ])
+            |> div []
+        , div [] [ br [] [] ]
         , viewSharedPile gameInfo
         , div [] [ br [] [] ]
         , viewRoundStateButton gameInfo
+        , div [] [ br [] [] ]
         , viewGameStats gameInfo
         ]

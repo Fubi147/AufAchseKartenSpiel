@@ -98,13 +98,14 @@ calculateScore player =
     { player | score = player.score + calculateScoreFromRoute (player.route |> Array.toList |> List.reverse) }
 
 
+isStageEnd : GameInfo -> Bool
+isStageEnd gameInfo =
+    gameInfo.sharedPileSum >= 50 * (1 + Array.length gameInfo.players)
+
+
 endRound : GameInfo -> GameInfo
 endRound gameInfo =
-    let
-        isStageEnd =
-            gameInfo.sharedPileSum >= 50 * (1 + Array.length gameInfo.players)
-    in
-    if isStageEnd then
+    if isStageEnd gameInfo then
         { gameInfo | roundState = StageEnd, players = Array.map calculateScore gameInfo.players }
 
     else
