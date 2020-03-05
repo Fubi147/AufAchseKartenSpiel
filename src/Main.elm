@@ -7,6 +7,7 @@ import Browser
 import GameLogic exposing (..)
 import GameView exposing (..)
 import Html exposing (..)
+import Html.Events exposing (onClick)
 import Maybe.Extra
 import Model exposing (..)
 import Random exposing (Seed)
@@ -32,11 +33,7 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init _ =
-    --( Model <| Start <| StartInfo [ "Player 1" ], Cmd.none )
-    --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2", "Player 3" ]) Random.independentSeed )
-    --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1" ]) Random.independentSeed )
-    --( Model End, Random.generate (GameStarted <| StartInfo [ "Player 1", "Player 2" ]) Random.independentSeed )
-    ( Model <| Start <| StartInfo [ "Player 1", "Player 2" ], Cmd.none )
+    ( Model <| Start <| StartInfo [ "Player 1" ], Cmd.none )
 
 
 
@@ -221,6 +218,9 @@ update msg model =
         NextStageClicked ->
             ( model |> updateGameInfo nextStage, Cmd.none )
 
+        EndGameClicked ->
+            ( model |> endGame, Cmd.none )
+
 
 
 -- SUBSCRIPTIONS
@@ -244,5 +244,19 @@ view model =
         Play gameInfo ->
             viewGame gameInfo
 
-        End ->
-            text "end"
+        End endInfo ->
+            let
+                playersSortedByScore =
+                    endInfo
+                        |> List.sortBy Tuple.second
+                        |> List.reverse
+            in
+            div []
+                ([ button [ playersSortedByScore |> List.map Tuple.first |> StartInfo |> StartGame |> onClick ] [ text "Start New Game" ]
+                 , div [] [ br [] [] ]
+                 ]
+                    ++ [ playersSortedByScore
+                            |> List.indexedMap (\place ( name, score ) -> div [] [ String.fromInt (place + 1) ++ ". Place (" ++ String.fromInt score ++ " km): " ++ name |> text ])
+                            |> div []
+                       ]
+                )

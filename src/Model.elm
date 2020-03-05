@@ -14,7 +14,7 @@ type alias Model =
 type GameState
     = Start StartInfo
     | Play GameInfo
-    | End
+    | End (List ( String, Int ))
 
 
 type alias StartInfo =
@@ -75,6 +75,7 @@ type Msg
     | EndTurnClicked
     | RevealSharedPileCardClicked
     | NextStageClicked
+    | EndGameClicked
 
 
 updateStartInfo : (StartInfo -> StartInfo) -> Model -> Model

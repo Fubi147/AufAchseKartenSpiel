@@ -200,7 +200,11 @@ viewRoundStateButton gameInfo =
                     button [ onClick <| RevealSharedPileCardClicked ] [ text "Reveal Shared Pile Card" ]
 
         StageEnd ->
-            button [ onClick NextStageClicked ] [ text "Next Stage" ]
+            if gameInfo.stageNumber >= 4 then
+                button [ onClick EndGameClicked ] [ text "End Game" ]
+
+            else
+                button [ onClick NextStageClicked ] [ text "Next Stage" ]
 
 
 viewGameStats : GameInfo -> Html Msg

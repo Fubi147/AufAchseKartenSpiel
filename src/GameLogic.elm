@@ -82,6 +82,9 @@ calculateScore player =
                 ServiceStation :: (Speed speed) :: rest ->
                     calculateScoreFromRoute (Speed speed :: rest)
 
+                (Speed speed) :: [ ServiceStation ] ->
+                    speed
+
                 (Speed speed1) :: ServiceStation :: (Speed speed2) :: rest ->
                     if speed2 < speed1 then
                         speed1 + calculateScoreFromRoute (Speed speed2 :: rest)
@@ -114,6 +117,16 @@ endRound gameInfo =
             , roundNumber = gameInfo.roundNumber + 1
         }
             |> fillPlayersHand
+
+
+endGame : Model -> Model
+endGame model =
+    case model.gameState of
+        Play gameInfo ->
+            { model | gameState = End (gameInfo.players |> Array.toList |> List.map (\player -> ( player.name, player.score ))) }
+
+        _ ->
+            model
 
 
 getCardValue : Card -> Int
