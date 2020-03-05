@@ -10,16 +10,16 @@ isLastPlayerInRound : GameInfo -> Bool
 isLastPlayerInRound gameInfo =
     case gameInfo.roundState of
         NextPlayerInTurn playerIndex ->
-            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.stageNumber + gameInfo.roundNumber - 1)
 
         PlayerInTurn playerIndex ->
-            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.stageNumber + gameInfo.roundNumber - 1)
 
         RevealSharedPileCardNextPlayerInTurn playerIndex ->
-            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.stageNumber + gameInfo.roundNumber - 1)
 
         RevealSharedPileCardPlayerInTurn playerIndex ->
-            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.roundNumber - 1)
+            playerIndex == modBy (Array.length gameInfo.players) (gameInfo.stageNumber + gameInfo.roundNumber - 1)
 
         _ ->
             False
@@ -110,7 +110,7 @@ endRound gameInfo =
 
     else
         { gameInfo
-            | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.roundNumber + 1))
+            | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.stageNumber + gameInfo.roundNumber + 1))
             , roundNumber = gameInfo.roundNumber + 1
         }
             |> fillPlayersHand
