@@ -55,7 +55,7 @@ nextStage gameInfo =
     { gameInfo
         | roundState = NextPlayerInTurn (modBy (Array.length gameInfo.players) (gameInfo.stageNumber + 1))
         , roundNumber = 0
-        , players = Array.map (\player -> { player | hand = Array.empty }) gameInfo.players
+        , players = Array.map (\player -> { player | hand = Array.empty, route = Array.empty }) gameInfo.players
     }
         |> fillPlayersHand
 
@@ -133,9 +133,9 @@ cardGenerator =
     Random.weighted
         ( 12, ServiceStation )
         [ ( 5, Minus50 )
-        , ( 5, DrawCard 1 )
-        , ( 5, DrawCard 2 )
-        , ( 5, Discard )
+        , ( 25, DrawCard 1 )
+        , ( 15, DrawCard 2 )
+        , ( 25, Discard )
         , ( 4, Speed 10 )
         , ( 4, Speed 20 )
         , ( 5, Speed 30 )
