@@ -95,6 +95,15 @@ calculateScore player =
                 (Speed speed) :: ServiceStation :: ServiceStation :: _ ->
                     speed
 
+                (Speed speed) :: Minus50 :: _ ->
+                    speed
+
+                (Speed speed) :: Discard :: _ ->
+                    speed
+
+                (Speed speed) :: (DrawCard _) :: _ ->
+                    speed
+
                 _ ->
                     0
     in
