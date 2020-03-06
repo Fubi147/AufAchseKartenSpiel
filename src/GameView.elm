@@ -79,7 +79,7 @@ viewPlayer gameInfo playerIndex player =
             Array.get (Array.length player.cardsToRoute - 1) player.cardsToRoute
 
         routeCardsHidden =
-            gameInfo.roundState /= StageEnd
+            gameInfo.roundState /= StageEnd || not isPlayerInTurn
 
         routeCards =
             div []
