@@ -70,7 +70,7 @@ viewCardImage card highlighted showBack onClickHandler =
                     Discard ->
                         "-discard"
     in
-    img ([ src ("svg/card" ++ imageFileName ++ ".png"), width 100 ] ++ highlightedAttributes ++ onClickHandler) []
+    img ([ src ("svg/card" ++ imageFileName ++ ".png"), width 120 ] ++ highlightedAttributes ++ onClickHandler) []
 
 
 viewPlayer : GameInfo -> Int -> Player -> Html Msg
