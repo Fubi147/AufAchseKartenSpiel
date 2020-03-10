@@ -44,7 +44,7 @@ viewCardImage card highlighted showBack onClickHandler =
     let
         highlightedAttributes =
             if highlighted then
-                [ style "margin-bottom" "8px" ]
+                [ style "border" "4px solid green", style "border-radius" "20px" ]
 
             else
                 []
