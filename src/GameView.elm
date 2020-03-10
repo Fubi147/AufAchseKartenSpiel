@@ -9,6 +9,10 @@ import Maybe.Extra
 import Model exposing (..)
 
 
+cardSize =
+    ( 120, 189 )
+
+
 viewCard : Card -> Bool -> Bool -> List (Attribute Msg) -> Html Msg
 viewCard card highlighted showBack onClickHandler =
     let
@@ -70,7 +74,37 @@ viewCardImage card highlighted showBack onClickHandler =
                     Discard ->
                         "-discard"
     in
-    img ([ src ("svg/card" ++ imageFileName ++ ".png"), width 120 ] ++ highlightedAttributes ++ onClickHandler) []
+    img ([ src ("svg/card" ++ imageFileName ++ ".png"), width (Tuple.first cardSize) ] ++ highlightedAttributes ++ onClickHandler) []
+
+
+emptyCardView handlers =
+    let
+        color =
+            if List.isEmpty handlers then
+                "#aaa"
+
+            else
+                "black"
+    in
+    div
+        ([ style "width" ((cardSize |> Tuple.first |> String.fromInt) ++ "px")
+         , style "height" ((cardSize |> Tuple.second |> String.fromInt) ++ "px")
+         , style "border" ("4px dashed " ++ color)
+         , style "border-radius" "20px"
+         , style "display" "inline-table"
+         ]
+            ++ handlers
+        )
+        [ div
+            [ style "display" "table-cell"
+            , style "vertical-align" "middle"
+            , style "text-align" "center"
+            , style "font-size" "64px"
+            , style "font-weight" "900"
+            , style "color" color
+            ]
+            [ text "✚" ]
+        ]
 
 
 viewPlayer : GameInfo -> Int -> Player -> Html Msg
@@ -113,7 +147,7 @@ viewPlayer gameInfo playerIndex player =
             Array.get (Array.length player.cardsToRoute - 1) player.cardsToRoute
 
         routeCardsHidden =
-            gameInfo.roundState /= StageEnd || not isPlayerInTurn
+            gameInfo.roundState == StageEnd || isPlayerInTurn |> not
 
         routeCards =
             div []
@@ -121,7 +155,13 @@ viewPlayer gameInfo playerIndex player =
                     ++ (Array.toList (Array.map (\card -> viewCardImage card False routeCardsHidden []) player.route)
                             ++ Array.toList (Array.map (\card -> viewCardImage card False False []) player.cardsToRoute)
                             ++ [ if Array.length player.cardsToRoute < maxNumberCardsToRoute then
-                                    Maybe.Extra.unwrap (text "") (\index -> button [ onClick <| AddToRouteClicked playerIndex index ] [ text "Add To Route" ]) player.selectedHandCardIndex
+                                    emptyCardView <| Maybe.Extra.unwrap [] (\index -> [ onClick <| AddToRouteClicked playerIndex index ]) player.selectedHandCardIndex
+
+                                 else
+                                    text ""
+                               ]
+                            ++ [ if Array.length player.cardsToRoute + 1 < maxNumberCardsToRoute then
+                                    emptyCardView []
 
                                  else
                                     text ""
@@ -172,11 +212,14 @@ viewSharedPile gameInfo =
                                 [ button [ onClick <| TakeSharedPileCardBackClicked playerIndex card ] [ text "Take Card Back" ] ]
 
                             Nothing ->
-                                if getSelectedCardFromPlayersHand playerIndex gameInfo.players == Nothing then
-                                    []
+                                [ emptyCardView
+                                    (if getSelectedCardFromPlayersHand playerIndex gameInfo.players == Nothing then
+                                        []
 
-                                else
-                                    [ button [ onClick <| AddToSharedPileClicked playerIndex ] [ text "Add To Pile" ] ]
+                                     else
+                                        [ onClick <| AddToSharedPileClicked playerIndex ]
+                                    )
+                                ]
 
                     Nothing ->
                         []
