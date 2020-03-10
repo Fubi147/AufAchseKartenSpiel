@@ -3,10 +3,14 @@ module GameView exposing (..)
 import Array exposing (Array)
 import GameLogic exposing (..)
 import Html exposing (..)
-import Html.Attributes exposing (disabled, style)
+import Html.Attributes exposing (disabled, src, style, width)
 import Html.Events exposing (..)
 import Maybe.Extra
 import Model exposing (..)
+
+
+cardSize =
+    ( 120, 189 )
 
 
 viewCard : Card -> Bool -> Bool -> List (Attribute Msg) -> Html Msg
@@ -39,6 +43,70 @@ viewCard card highlighted showBack onClickHandler =
     button (onClickHandler ++ isDisabled ++ colorAttributes) [ text cardText ]
 
 
+viewCardImage : Card -> Bool -> Bool -> List (Attribute Msg) -> Html Msg
+viewCardImage card highlighted showBack onClickHandler =
+    let
+        highlightedAttributes =
+            if highlighted then
+                [ style "border" "4px solid green", style "border-radius" "20px" ]
+
+            else
+                []
+
+        imageFileName =
+            if showBack then
+                "-back"
+
+            else
+                case card of
+                    Speed speed ->
+                        "" ++ String.fromInt speed
+
+                    Minus50 ->
+                        "-50"
+
+                    ServiceStation ->
+                        "-service"
+
+                    DrawCard numberCardsToDraw ->
+                        "+" ++ String.fromInt numberCardsToDraw
+
+                    Discard ->
+                        "-discard"
+    in
+    img ([ src ("svg/card" ++ imageFileName ++ ".png"), width (Tuple.first cardSize) ] ++ highlightedAttributes ++ onClickHandler) []
+
+
+emptyCardView handlers =
+    let
+        color =
+            if List.isEmpty handlers then
+                "#aaa"
+
+            else
+                "black"
+    in
+    div
+        ([ style "width" ((cardSize |> Tuple.first |> String.fromInt) ++ "px")
+         , style "height" ((cardSize |> Tuple.second |> String.fromInt) ++ "px")
+         , style "border" ("4px dashed " ++ color)
+         , style "border-radius" "20px"
+         , style "display" "inline-table"
+         ]
+            ++ handlers
+        )
+        [ div
+            [ style "display" "table-cell"
+            , style "vertical-align" "middle"
+            , style "text-align" "center"
+            , style "font-size" "64px"
+            , style "font-weight" "900"
+            , style "color" color
+            ]
+            [ text "✚" ]
+        ]
+
+
 viewPlayer : GameInfo -> Int -> Player -> Html Msg
 viewPlayer gameInfo playerIndex player =
     let
@@ -66,10 +134,10 @@ viewPlayer gameInfo playerIndex player =
                     (Array.indexedMap
                         (\cardIndex card ->
                             if isPlayerInTurn then
-                                viewCard card (Just cardIndex == player.selectedHandCardIndex) False [ onClick (HandCardClicked playerIndex cardIndex) ]
+                                viewCardImage card (Just cardIndex == player.selectedHandCardIndex) False [ onClick (HandCardClicked playerIndex cardIndex) ]
 
                             else
-                                viewCard card False True []
+                                viewCardImage card False True []
                         )
                         player.hand
                     )
@@ -79,15 +147,21 @@ viewPlayer gameInfo playerIndex player =
             Array.get (Array.length player.cardsToRoute - 1) player.cardsToRoute
 
         routeCardsHidden =
-            gameInfo.roundState /= StageEnd
+            gameInfo.roundState == StageEnd || isPlayerInTurn |> not
 
         routeCards =
             div []
                 ([ text "Route: " ]
-                    ++ (Array.toList (Array.map (\card -> viewCard card False routeCardsHidden []) player.route)
-                            ++ Array.toList (Array.map (\card -> viewCard card False False []) player.cardsToRoute)
+                    ++ (Array.toList (Array.map (\card -> viewCardImage card False routeCardsHidden []) player.route)
+                            ++ Array.toList (Array.map (\card -> viewCardImage card False False []) player.cardsToRoute)
                             ++ [ if Array.length player.cardsToRoute < maxNumberCardsToRoute then
-                                    Maybe.Extra.unwrap (text "") (\index -> button [ onClick <| AddToRouteClicked playerIndex index ] [ text "Add To Route" ]) player.selectedHandCardIndex
+                                    emptyCardView <| Maybe.Extra.unwrap [] (\index -> [ onClick <| AddToRouteClicked playerIndex index ]) player.selectedHandCardIndex
+
+                                 else
+                                    text ""
+                               ]
+                            ++ [ if Array.length player.cardsToRoute + 1 < maxNumberCardsToRoute then
+                                    emptyCardView []
 
                                  else
                                     text ""
@@ -112,10 +186,10 @@ viewSharedPile : GameInfo -> Html Msg
 viewSharedPile gameInfo =
     let
         sharedPile =
-            Array.toList (Array.map (\card -> viewCard card False True []) gameInfo.sharedPile)
+            Array.toList (Array.map (\card -> viewCardImage card False True []) gameInfo.sharedPile)
 
         sharedPileCard =
-            Maybe.Extra.unwrap [] (\card -> [ viewCard card False False [] ]) gameInfo.sharedPileCard
+            Maybe.Extra.unwrap [] (\card -> [ viewCardImage card False False [] ]) gameInfo.sharedPileCard
 
         playerInTurnToPlaceSharedPileCard =
             case gameInfo.roundState of
@@ -138,11 +212,14 @@ viewSharedPile gameInfo =
                                 [ button [ onClick <| TakeSharedPileCardBackClicked playerIndex card ] [ text "Take Card Back" ] ]
 
                             Nothing ->
-                                if getSelectedCardFromPlayersHand playerIndex gameInfo.players == Nothing then
-                                    []
+                                [ emptyCardView
+                                    (if getSelectedCardFromPlayersHand playerIndex gameInfo.players == Nothing then
+                                        []
 
-                                else
-                                    [ button [ onClick <| AddToSharedPileClicked playerIndex ] [ text "Add To Pile" ] ]
+                                     else
+                                        [ onClick <| AddToSharedPileClicked playerIndex ]
+                                    )
+                                ]
 
                     Nothing ->
                         []

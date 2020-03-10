@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Array exposing (Array)
 import Array.Extra
@@ -224,6 +224,9 @@ update msg model =
 
 
 -- SUBSCRIPTIONS
+
+
+port pouchDB : String -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
