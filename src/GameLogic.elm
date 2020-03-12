@@ -214,17 +214,17 @@ fillPlayersHand gameInfo =
 getCardOrder : Card -> Int
 getCardOrder card =
     case card of
-        Speed _ ->
-            1
+        Speed value ->
+            value
 
         Minus50 ->
-            0
+            140
 
         ServiceStation ->
-            0
+            130
 
-        DrawCard _ ->
-            0
+        DrawCard amount ->
+            140 + amount
 
         Discard ->
-            0
+            150
