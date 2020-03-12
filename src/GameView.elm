@@ -3,7 +3,7 @@ module GameView exposing (..)
 import Array exposing (Array)
 import GameLogic exposing (..)
 import Html exposing (..)
-import Html.Attributes exposing (disabled, style)
+import Html.Attributes exposing (disabled, src, style, width)
 import Html.Events exposing (..)
 import Maybe.Extra
 import Model exposing (..)
@@ -39,6 +39,40 @@ viewCard card highlighted showBack onClickHandler =
     button (onClickHandler ++ isDisabled ++ colorAttributes) [ text cardText ]
 
 
+viewCardImage : Card -> Bool -> Bool -> List (Attribute Msg) -> Html Msg
+viewCardImage card highlighted showBack onClickHandler =
+    let
+        highlightedAttributes =
+            if highlighted then
+                [ style "margin-bottom" "8px" ]
+
+            else
+                []
+
+        imageFileName =
+            if showBack then
+                "-back"
+
+            else
+                case card of
+                    Speed speed ->
+                        "" ++ String.fromInt speed
+
+                    Minus50 ->
+                        "-50"
+
+                    ServiceStation ->
+                        "-service"
+
+                    DrawCard numberCardsToDraw ->
+                        "+" ++ String.fromInt numberCardsToDraw
+
+                    Discard ->
+                        "-discard"
+    in
+    img ([ src ("svg/card" ++ imageFileName ++ ".png"), width 120 ] ++ highlightedAttributes ++ onClickHandler) []
+
+
 viewPlayer : GameInfo -> Int -> Player -> Html Msg
 viewPlayer gameInfo playerIndex player =
     let
@@ -66,10 +100,10 @@ viewPlayer gameInfo playerIndex player =
                     (Array.indexedMap
                         (\cardIndex card ->
                             if isPlayerInTurn then
-                                viewCard card (Just cardIndex == player.selectedHandCardIndex) False [ onClick (HandCardClicked playerIndex cardIndex) ]
+                                viewCardImage card (Just cardIndex == player.selectedHandCardIndex) False [ onClick (HandCardClicked playerIndex cardIndex) ]
 
                             else
-                                viewCard card False True []
+                                viewCardImage card False True []
                         )
                         player.hand
                     )
@@ -79,13 +113,13 @@ viewPlayer gameInfo playerIndex player =
             Array.get (Array.length player.cardsToRoute - 1) player.cardsToRoute
 
         routeCardsHidden =
-            gameInfo.roundState /= StageEnd
+            gameInfo.roundState /= StageEnd || not isPlayerInTurn
 
         routeCards =
             div []
                 ([ text "Route: " ]
-                    ++ (Array.toList (Array.map (\card -> viewCard card False routeCardsHidden []) player.route)
-                            ++ Array.toList (Array.map (\card -> viewCard card False False []) player.cardsToRoute)
+                    ++ (Array.toList (Array.map (\card -> viewCardImage card False routeCardsHidden []) player.route)
+                            ++ Array.toList (Array.map (\card -> viewCardImage card False False []) player.cardsToRoute)
                             ++ [ if Array.length player.cardsToRoute < maxNumberCardsToRoute then
                                     Maybe.Extra.unwrap (text "") (\index -> button [ onClick <| AddToRouteClicked playerIndex index ] [ text "Add To Route" ]) player.selectedHandCardIndex
 
@@ -112,10 +146,10 @@ viewSharedPile : GameInfo -> Html Msg
 viewSharedPile gameInfo =
     let
         sharedPile =
-            Array.toList (Array.map (\card -> viewCard card False True []) gameInfo.sharedPile)
+            Array.toList (Array.map (\card -> viewCardImage card False True []) gameInfo.sharedPile)
 
         sharedPileCard =
-            Maybe.Extra.unwrap [] (\card -> [ viewCard card False False [] ]) gameInfo.sharedPileCard
+            Maybe.Extra.unwrap [] (\card -> [ viewCardImage card False False [] ]) gameInfo.sharedPileCard
 
         playerInTurnToPlaceSharedPileCard =
             case gameInfo.roundState of

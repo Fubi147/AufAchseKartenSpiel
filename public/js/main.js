@@ -85,6 +85,16 @@ const start = () => {
         })
     }
   })
+
+    if('serviceWorker' in navigator) {
+        navigator.serviceWorker
+                .register('/service_worker.js')
+                .then(function() { console.log("Service Worker Registered"); });
+    }
+
+    app.ports.pouchDB.subscribe(function(capture) {
+        saveCapture(capture)
+});
 }
 
 start()
